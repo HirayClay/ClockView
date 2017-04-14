@@ -75,9 +75,9 @@ public class ClockView extends View {
 
         int width = getMeasuredWidth();
         int height = getMeasuredHeight();
-        //draw the clock's
-        //make the center of this view the new pivot ,
-        // noticed that all transform is applied to the coordinated system rather than the canvas
+        //draw the clock
+        //make the center of this view the new pivot
+        // noticed that all transform is applied to the coordination system rather than the canvas
         canvas.translate(width / 2, height / 2);
         float radius = width / 2 - outerPaint.getStrokeWidth() / 2;
         canvas.drawCircle(0, 0, radius, outerPaint);
