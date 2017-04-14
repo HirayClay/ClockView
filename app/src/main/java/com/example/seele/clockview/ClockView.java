@@ -11,8 +11,6 @@ import android.view.View;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Locale;
 
 /**
