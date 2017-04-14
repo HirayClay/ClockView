@@ -103,7 +103,7 @@ public class ClockView extends View {
         }
         canvas.restore();
 
-        //draw minute second hour stick!
+        //draw minute、second 、hour bar!
         calendar = Calendar.getInstance(Locale.CHINA);
         int hour = calendar.get(Calendar.HOUR);
         int second = calendar.get(Calendar.SECOND);
