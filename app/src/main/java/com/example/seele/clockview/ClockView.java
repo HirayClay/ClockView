@@ -11,7 +11,11 @@ import android.view.View;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by CJJ on 2017/4/13.
@@ -26,6 +30,9 @@ public class ClockView extends View {
     private Paint anchorPaint;
     private Paint mStickPaint;
     private Calendar calendar;
+    private float[][] angleCache = new float[3][3];
+    private ExecutorService executors;
+    HashMap<Integer, float[]> timeMap = new HashMap<>();
 
     public ClockView(Context context) {
         super(context);
@@ -66,6 +73,45 @@ public class ClockView extends View {
         anchorPaint.setAntiAlias(true);
         markerPaint.setAntiAlias(true);
         mStickPaint.setAntiAlias(true);
+        compute();
+    }
+
+    private void compute() {
+        executors = Executors.newSingleThreadExecutor();
+        executors.execute(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    Date date = new Date();
+                    long time = date.getTime();
+                    date.setTime(time);
+                    if (!timeMap.containsKey(time)) {//如果当前时间没有计算
+                        calendar = Calendar.getInstance(Locale.CHINA);
+                        calendar.setTime(date);
+                        int hour = calendar.get(Calendar.HOUR);
+                        int second = calendar.get(Calendar.SECOND);
+                        int minute = calendar.get(Calendar.MINUTE);
+
+                        float hourDeg = (hour % 12) * 30 + minute / 60f * 30 + second / 60f / 60f * 30;
+                        float minuteDeg = minute * 6 + second / 60f * 6;
+                        float secDeg = second * 6;
+
+                        int index = second % 3;
+                        angleCache[index][0] = hourDeg;
+                        angleCache[index][1] = minuteDeg;
+                        angleCache[index][2] = secDeg;
+                        timeMap.put(second, angleCache[index]);
+                    }
+                }
+            }
+
+        });
+    }
+
+    private float[] get() {
+        Calendar calendar = Calendar.getInstance(Locale.CHINA);
+        int second = calendar.get(Calendar.SECOND);
+        return angleCache[second % 3];
     }
 
     @Override
@@ -102,17 +148,20 @@ public class ClockView extends View {
         canvas.restore();
 
         //draw minute、second 、hour bar!
-        calendar = Calendar.getInstance(Locale.CHINA);
-        int hour = calendar.get(Calendar.HOUR);
-        int second = calendar.get(Calendar.SECOND);
-        int minute = calendar.get(Calendar.MINUTE);
+//        calendar = Calendar.getInstance(Locale.CHINA);
+//        int hour = calendar.get(Calendar.HOUR);
+//        int second = calendar.get(Calendar.SECOND);
+//        int minute = calendar.get(Calendar.MINUTE);
 
-        Log.i(TAG, "onDraw: hour:" + hour + "---second:" + second + "---minute:" + minute);
-
-        float hourDeg = (hour % 12) * 30 + minute / 60f * 30 + second / 60f / 60f * 30;
-        float minuteDeg = minute * 6 + second / 60f * 6;
-        float secDeg = second * 6;
-
+//        Log.i(TAG, "onDraw: hour:" + hour + "---second:" + second + "---minute:" + minute);
+//
+//        float hourDeg = (hour % 12) * 30 + minute / 60f * 30 + second / 60f / 60f * 30;
+//        float minuteDeg = minute * 6 + second / 60f * 6;
+//        float secDeg = second * 6;
+        float[] angles = get();
+        float hourDeg = angles[0];
+        float minuteDeg = angles[1];
+        float secDeg = angles[2];
         canvas.save();
         canvas.rotate(hourDeg);
         mStickPaint.setStrokeWidth(9);
@@ -130,7 +179,14 @@ public class ClockView extends View {
         mStickPaint.setStrokeWidth(2);
         canvas.drawLine(0, 0 + radius * 0.25f, 0, 0 - getMeasuredWidth() / 2 * 0.93f, mStickPaint);
         canvas.restore();
-        postInvalidateDelayed(500);
+        postInvalidateDelayed(1000);
 
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        executors.shutdown();
+        executors = null;
     }
 }
